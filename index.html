@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control de Fortalezas 💜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-6 font-sans">
+
+    <div id="seccion-panel" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-lg border border-purple-100 mt-6">
+        <h1 class="text-3xl font-extrabold text-indigo-900 text-center mb-2">Taller de Fortalezas 💜</h1>
+        <p class="text-center text-gray-500 mb-8 text-sm">Introduce el nombre de la persona para generar su QR de votación y preparar su collage en directo.</p>
+        
+        <div class="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 mb-8">
+            <h3 class="text-sm font-bold text-indigo-950 uppercase tracking-wider mb-3">Crear acceso</h3>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="nuevo-nombre" placeholder="Escribe el nombre aquí (ej: Maria V, Enric...)" class="flex-grow p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-semibold">
+                <button onclick="registrarPacienteManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md">
+                    Generar QR y Ficha ✨
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Nombres activos en esta sesión:</h3>
+            <div id="lista-pacientes-activas" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p id="sin-pacientes" class="text-gray-400 italic text-sm col-span-2 text-center py-4">Introduce un nombre arriba para iniciar la dinámica.</p>
+            </div>
+        </div>
+
+        <div id="modal-qr" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-6 rounded-3xl max-w-xs w-full text-center shadow-2xl border border-indigo-50">
+                <h3 id="qr-titulo" class="text-lg font-bold text-indigo-950 mb-4">Escanear para votar a...</h3>
+                <canvas id="qr-canvas" class="mx-auto mb-5"></canvas>
+                <button onclick="cerrarModalQR()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold px-4 py-2.5 rounded-xl w-full transition-all">
+                    Entendido, cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="seccion-collage" class="hidden flex flex-col items-center">
+        
+        <button onclick="volverAlPanel()" class="mb-4 text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+            ← Volver al Panel de Control
+        </button>
+
+        <div id="area-collage" class="w-[1024px] h-[768px] bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-[45px] shadow-2xl border-8 border-white relative overflow-hidden p-6 flex items-center justify-center">
+            
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#4f46e5_1.5px,transparent_1.5px)] [background-size:24px_24px]"></div>
+
+            <div class="z-10 text-center bg-white/95 p-8 rounded-full shadow-2xl border-4 border-indigo-200 w-64 h-64 flex flex-col items-center justify-center">
+                <span class="text-4xl mb-1">✨</span>
+                <h1 id="protagonista-nombre" class="text-3xl font-extrabold text-indigo-950 uppercase tracking-wide">...</h1>
+                <p class="text-[10px] text-indigo-500 italic mt-1 max-w-[180px]">Lo que tu grupo abraza de ti</p>
+            </div>
+
+            <div id="contenedor-elementos-collage" class="absolute inset-0 w-full h-full pointer-events-none">
+                </div>
+
+        </div>
+
+        <div class="flex gap-4 mt-6">
+            <button onclick="exportarCollage()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3.5 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
+                📥 Descargar Collage Final (PNG)
+            </button>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQlgd3w5Psj2dwkDUtPoGHVqwzE8MLNjA",
+            authDomain: "juego-fortalezas.firebaseapp.com",
+            projectId: "juego-fortalezas",
+            storageBucket: "juego-fortalezas.firebasestorage.app",
+            messagingSenderId: "754972102827",
+            appId: "1:754972102827:web:714f432914a1b8b340a7ee"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Registro local en pantalla de los nombres para la sesión
+        window.registrarPacienteManual = function() {
+            const input = document.getElementById('nuevo-nombre');
+            const nombre = input.value.trim().toUpperCase();
+
+            if (!nombre) return alert("Escribe un nombre antes de añadir.");
+
+            const placeholder = document.getElementById('sin-pacientes');
+            if (placeholder) placeholder.remove();
+
+            const lista = document.getElementById('lista-pacientes-activas');
+
+            if (document.getElementById(`ficha-${nombre}`)) {
+                return alert("Este nombre ya está en tu lista de sesión.");
+            }
+
+            const fichaHTML = `
+                <div id="ficha-${nombre}" class="flex items-center justify-between p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 shadow-sm animate-fade-in">
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-950">${nombre}</h3>
+                        <button onclick="cargarYMostrarCollage('${nombre}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold mt-1 inline-block">Ver Collage →</button>
+                    </div>
+                    <button onclick="generarQR('${nombre}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all">Generar QR 📱</button>
+                </div>
+            `;
+
+            lista.insertAdjacentHTML('beforeend', fichaHTML);
+            input.value = "";
+        };
+
+        // Paleta de colores para pósits aleatorios
+        const coloresPosit = [
+            { bg: "bg-amber-100/95", border: "border-amber-300", accent: "border-amber-400/50" },   // Amarillo suave
+            { bg: "bg-emerald-100/95", border: "border-emerald-300", accent: "border-emerald-400/50" }, // Verde pastel
+            { bg: "bg-sky-100/95", border: "border-sky-300", accent: "border-sky-400/50" },         // Azul pastel
+            { bg: "bg-rose-100/95", border: "border-rose-300", accent: "border-rose-400/50" },       // Rosa pastel
+            { bg: "bg-orange-100/95", border: "border-orange-300", accent: "border-orange-400/50" },   // Naranja pastel
+            { bg: "bg-purple-100/95", border: "border-purple-300", accent: "border-purple-400/50" }   // Lila pastel
+        ];
+
+        // Cargar y maquetar el Collage Completo
+        window.cargarYMostrarCollage = async function(nombre) {
+            document.getElementById('seccion-panel').classList.add('hidden');
+            document.getElementById('seccion-collage').classList.remove('hidden');
+            document.getElementById('protagonista-nombre').innerText = nombre;
+
+            const contenedor = document.getElementById('contenedor-elementos-collage');
+            contenedor.innerHTML = ""; 
+
+            try {
+                const q = query(collection(db, "respuestas"), where("chicaNombre", "==", nombre.toUpperCase()));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    contenedor.innerHTML = `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 italic bg-white/90 px-6 py-4 rounded-2xl shadow-md border border-indigo-50">Aún no hay respuestas enviadas para ${nombre}.</div>`;
+                    return;
+                }
+
+                // 8 POSICIONES MAESTRAS ALREDEDOR DEL LIENZO (1024x768)
+                // Se distribuyen uniformemente para usar todo el espacio de la pantalla sin tocar el centro
+                const posicionesGrupo = [
+                    { x: 30,  y: 35,  rot: -3 },   // Esquina superior izquierda
+                    { x: 420, y: 25,  rot: 2 },    // Superior centro
+                    { x: 740, y: 35,  rot: 4 },    // Esquina superior derecha
+                    { x: 30,  y: 280, rot: -4 },   // Centro izquierda
+                    { x: 750, y: 280, rot: 3 },    // Centro derecha
+                    { x: 30,  y: 510, rot: 4 },    // Esquina inferior izquierda
+                    { x: 420, y: 560, rot: -2 },   // Inferior centro
+                    { x: 740, y: 510, rot: -3 }    // Esquina inferior derecha
+                ];
+
+                let index = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const datos = doc.data();
+                    
+                    // Obtener la coordenada base y el color aleatorio para este grupo de dedicatoria
+                    const posBase = posicionesGrupo[index % posicionesGrupo.length];
+                    const temaColor = coloresPosit[Math.floor(Math.random() * coloresPosit.length)];
+                    
+                    // Añadimos un micro-desplazamiento si participan más de 8 personas para que se apilen sutilmente
+                    const shiftX = (index >= posicionesGrupo.length) ? (Math.random() * 25 - 12) : 0;
+                    const shiftY = (index >= posicionesGrupo.length) ? (Math.random() * 25 - 12) : 0;
+                    index++;
+
+                    // CREAR UN CONTENEDOR AGRUPADO PARA EL PÓSIT Y SU FOTO (SE MUEVEN JUNTOS)
+                    const bloqueGrupo = document.createElement('div');
+                    bloqueGrupo.className = "absolute flex items-start gap-3 pointer-events-auto transition-all duration-300 hover:scale-110 hover:z-50 z-20";
+                    bloqueGrupo.style.left = `${posBase.x + shiftX}px`;
+                    bloqueGrupo.style.top = `${posBase.y + shiftY}px`;
+                    bloqueGrupo.style.transform = `rotate(${posBase.rot}deg)`;
+
+                    // Renderizar el Pósit simplificado: solo emojis/iconos, sin textos de categorías
+                    let htmlBloque = `
+                        <div class="w-52 ${temaColor.bg} p-3 rounded-2xl shadow-md border-t-8 ${temaColor.border} text-[10px] leading-relaxed text-gray-800">
+                            <div class="font-bold text-indigo-950 border-b border-dashed ${temaColor.accent} pb-1 mb-2 text-[11px] flex justify-between">
+                                <span>Mensaje bonito ✨</span>
+                            </div>
+                            <p class="mb-1.5"><strong>💪</strong> ${datos.fortaleza}</p>
+                            <p class="mb-1.5"><strong>🎨</strong> ${datos.color}</p>
+                            <p class="mb-1.5"><strong>🎬</strong> ${datos.personaje}</p>
+                            <p class="mb-1.5"><strong>🗺️</strong> ${datos.plan}</p>
+                            <p class="mb-1.5"><strong>📻</strong> ${datos.cancion}</p>
+                            <p class="mb-1.5"><strong>☀️</strong> ${datos.superpoder}</p>
+                            <p class="mb-1.5"><strong>🌱</strong> ${datos.frase}</p>
+                            <p><strong>🧸</strong> ${datos.animal}</p>
+                        </div>
+                    `;
+
+                    // Si incluye foto, se añade JUSTO al lado con un borde blanco muy fino y simétrico
+                    if (datos.foto) {
+                        htmlBloque += `
+                            <div class="bg-white p-1 rounded-xl shadow-lg border border-gray-100 w-28 transform rotate-3 flex-shrink-0 self-center">
+                                <img src="${datos.foto}" class="w-full h-24 object-cover rounded-lg border border-gray-100">
+                            </div>
+                        `;
+                    }
+
+                    bloqueGrupo.innerHTML = htmlBloque;
+                    contenedor.appendChild(bloqueGrupo);
+                });
+
+            } catch (error) {
+                console.error("Error al montar collage interactivo:", error);
+                alert("Ha ocurrido un error al cargar la información de Firebase.");
+            }
+        };
+    </script>
+
+    <script>
+        function generarQR(nombre) {
+            const modal = document.getElementById('modal-qr');
+            const canvas = document.getElementById('qr-canvas');
+            const titulo = document.getElementById('qr-titulo');
+
+            titulo.innerText = `Escanear para votar a ${nombre}`;
+            
+            // Genera la URL apuntando al archivo formulario.html de la misma carpeta
+            const urlFormulario = `${window.location.origin}${window.location.pathname.replace('index.html', '')}formulario.html?chica=${encodeURIComponent(nombre)}`;
+
+            new QRious({
+                element: canvas,
+                value: urlFormulario,
+                size: 220,
+                background: '#ffffff',
+                foreground: '#4f46e5'
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function cerrarModalQR() {
+            document.getElementById('modal-qr').classList.add('hidden');
+        }
+
+        function volverAlPanel() {
+            document.getElementById('seccion-panel').classList.remove('hidden');
+            document.getElementById('seccion-collage').classList.add('hidden');
+        }
+
+        function exportarCollage() {
+            const elemento = document.getElementById('area-collage');
+            const nombre = document.getElementById('protagonista-nombre').innerText;
+
+            html2canvas(elemento, { 
+                scale: 2, // Súper nítido para impresión física
+                useCORS: true 
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Collage_${nombre}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
