@@ -113,6 +113,7 @@
             const fichaHTML = `
                 <div id="ficha-${nombre}" class="flex items-center justify-between p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 shadow-sm">
                     <div>
+
                         <h3 class="text-base font-bold text-indigo-950">${nombre}</h3>
                         <button onclick="cargarYMostrarCollage('${nombre}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold mt-0.5 inline-block">Ver Collage →</button>
                     </div>
@@ -154,7 +155,7 @@
 
                 const rotaciones = [-1.5, 1.2, -2, 1.8, -0.8, 2.2];
 
-                querySnapshot.forEach((doc, idx) => {
+                querySnapshot.doc.forEach((doc, idx) => {
                     const datos = doc.data();
                     const temaColor = coloresPosit[idx % coloresPosit.length];
                     const rot = rotaciones[idx % rotaciones.length];
