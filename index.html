@@ -8,70 +8,77 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
-<body class="bg-slate-50 min-h-screen p-6 font-sans">
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans text-slate-800">
 
-    <div id="seccion-panel" class="max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-lg border border-purple-100 mt-6">
+    <!-- SECCION 1: PANEL DE CONTROL -->
+    <div id="seccion-panel" class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-lg border border-purple-100 mt-4">
         <h1 class="text-3xl font-extrabold text-indigo-900 text-center mb-2">Taller de Fortalezas 💜</h1>
-        <p class="text-center text-gray-500 mb-8 text-sm">Introduce el nombre de la persona para generar su QR de votación y preparar su collage en directo.</p>
+        <p class="text-center text-gray-500 mb-8 text-sm">Introduce el nombre de la persona para generar su QR o copiar su enlace directo.</p>
         
-        <div class="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 mb-8">
-            <h3 class="text-sm font-bold text-indigo-950 uppercase tracking-wider mb-3">Crear acceso</h3>
+        <div class="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 mb-8">
+            <h3 class="text-sm font-bold text-indigo-950 uppercase tracking-wider mb-3">Añadir participante</h3>
             <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="nuevo-nombre" placeholder="Escribe el nombre aquí (ej: Maria V, Enric...)" class="flex-grow p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-semibold">
+                <input type="text" id="nuevo-nombre" placeholder="Nombre (ej: Eli, Maria, Marta...)" class="flex-grow p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-semibold">
                 <button onclick="registrarPacienteManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-md">
-                    Generar QR y Ficha ✨
+                    Crear Ficha y QR ✨
                 </button>
             </div>
         </div>
 
         <div>
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Nombres activos en esta sesión:</h3>
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Participantes en esta sesión:</h3>
             <div id="lista-pacientes-activas" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <p id="sin-pacientes" class="text-gray-400 italic text-sm col-span-2 text-center py-4">Introduce un nombre arriba para iniciar la dinámica.</p>
             </div>
         </div>
 
+        <!-- MODAL QR -->
         <div id="modal-qr" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div class="bg-white p-6 rounded-3xl max-w-xs w-full text-center shadow-2xl border border-indigo-50">
-                <h3 id="qr-titulo" class="text-lg font-bold text-indigo-950 mb-4">Escanear para votar a...</h3>
-                <canvas id="qr-canvas" class="mx-auto mb-5"></canvas>
-                <button onclick="cerrarModalQR()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold px-4 py-2.5 rounded-xl w-full transition-all">
-                    Entendido, cerrar
+            <div class="bg-white p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-indigo-50">
+                <h3 id="qr-titulo" class="text-lg font-bold text-indigo-950 mb-2">Escanear para participar</h3>
+                <p class="text-xs text-gray-400 mb-4">Si la cámara no lo abre, comparte el enlace directo:</p>
+                <canvas id="qr-canvas" class="mx-auto mb-4"></canvas>
+                
+                <div class="mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200 flex items-center gap-2">
+                    <input type="text" id="enlace-copiable" readonly class="text-[11px] text-gray-600 bg-transparent flex-grow outline-none select-all truncate">
+                    <button onclick="copiarEnlaceDirecto()" id="btn-copiar" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">Copiar</button>
+                </div>
+
+                <button onclick="cerrarModalQR()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl w-full text-sm transition-all">
+                    Cerrar
                 </button>
             </div>
         </div>
     </div>
 
-
-    <div id="seccion-collage" class="hidden flex flex-col items-center">
-        
-        <button onclick="volverAlPanel()" class="mb-4 text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
-            ← Volver al Panel de Control
-        </button>
-
-        <div id="area-collage" class="w-[1024px] h-[768px] bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-[45px] shadow-2xl border-8 border-white relative overflow-hidden p-6 flex items-center justify-center">
-            
-            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#4f46e5_1.5px,transparent_1.5px)] [background-size:24px_24px]"></div>
-
-            <div class="z-10 text-center bg-white/95 p-8 rounded-full shadow-2xl border-4 border-indigo-200 w-64 h-64 flex flex-col items-center justify-center">
-                <span class="text-4xl mb-1">✨</span>
-                <h1 id="protagonista-nombre" class="text-3xl font-extrabold text-indigo-950 uppercase tracking-wide">...</h1>
-                <p class="text-[10px] text-indigo-500 italic mt-1 max-w-[180px]">Lo que tu grupo abraza de ti</p>
-            </div>
-
-            <div id="contenedor-elementos-collage" class="absolute inset-0 w-full h-full pointer-events-none">
-                </div>
-
+    <!-- SECCION 2: COLLAGE AUTOEXPANSIBLE -->
+    <div id="seccion-collage" class="hidden flex flex-col items-center w-full pb-16">
+        <div class="flex flex-wrap items-center justify-between w-full max-w-[1300px] mb-4 gap-3">
+            <button onclick="volverAlPanel()" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1.5 text-sm bg-white px-5 py-2.5 rounded-2xl shadow-sm border border-indigo-100 transition-all">
+                ← Volver al Panel
+            </button>
+            <button onclick="exportarCollage()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-2xl shadow-md transition-all text-sm flex items-center gap-2 hover:scale-105">
+                📥 Descargar Collage en Alta Calidad (PNG)
+            </button>
         </div>
 
-        <div class="flex gap-4 mt-6">
-            <button onclick="exportarCollage()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3.5 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
-                📥 Descargar Collage Final (PNG)
-            </button>
+        <div id="area-collage" class="w-full max-w-[1300px] min-h-[820px] h-auto bg-gradient-to-br from-indigo-50/90 via-purple-50/90 to-pink-50/90 rounded-[40px] shadow-2xl border-8 border-white p-6 md:p-10 relative overflow-visible">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#4f46e5_1.5px,transparent_1.5px)] [background-size:24px_24px] pointer-events-none rounded-[32px]"></div>
+
+            <div class="relative z-10 flex flex-col items-center justify-center mb-10">
+                <div class="bg-white/95 px-10 py-5 rounded-full shadow-lg border-2 border-indigo-200 text-center flex flex-col items-center max-w-md">
+                    <span class="text-3xl mb-0.5">✨</span>
+                    <h1 id="protagonista-nombre" class="text-3xl md:text-4xl font-extrabold text-indigo-950 uppercase tracking-wide">...</h1>
+                    <p class="text-xs text-indigo-500 italic mt-1 font-medium">Lo que tu grupo abraza y admira de ti</p>
+                </div>
+            </div>
+
+            <div id="contenedor-elementos-collage" class="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+            </div>
         </div>
     </div>
 
-
+    <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
         import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
@@ -88,7 +95,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Registro local en pantalla de los nombres para la sesión
         window.registrarPacienteManual = function() {
             const input = document.getElementById('nuevo-nombre');
             const nombre = input.value.trim().toUpperCase();
@@ -101,16 +107,16 @@
             const lista = document.getElementById('lista-pacientes-activas');
 
             if (document.getElementById(`ficha-${nombre}`)) {
-                return alert("Este nombre ya está en tu lista de sesión.");
+                return alert("Este nombre ya está en la lista.");
             }
 
             const fichaHTML = `
-                <div id="ficha-${nombre}" class="flex items-center justify-between p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 shadow-sm animate-fade-in">
+                <div id="ficha-${nombre}" class="flex items-center justify-between p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 shadow-sm">
                     <div>
-                        <h3 class="text-lg font-bold text-indigo-950">${nombre}</h3>
-                        <button onclick="cargarYMostrarCollage('${nombre}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold mt-1 inline-block">Ver Collage →</button>
+                        <h3 class="text-base font-bold text-indigo-950">${nombre}</h3>
+                        <button onclick="cargarYMostrarCollage('${nombre}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold mt-0.5 inline-block">Ver Collage →</button>
                     </div>
-                    <button onclick="generarQR('${nombre}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all">Generar QR 📱</button>
+                    <button onclick="generarQR('${nombre}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all">Generar QR 📱</button>
                 </div>
             `;
 
@@ -118,125 +124,116 @@
             input.value = "";
         };
 
-        // Paleta de colores para pósits aleatorios
         const coloresPosit = [
-            { bg: "bg-amber-100/95", border: "border-amber-300", accent: "border-amber-400/50" },   // Amarillo suave
-            { bg: "bg-emerald-100/95", border: "border-emerald-300", accent: "border-emerald-400/50" }, // Verde pastel
-            { bg: "bg-sky-100/95", border: "border-sky-300", accent: "border-sky-400/50" },         // Azul pastel
-            { bg: "bg-rose-100/95", border: "border-rose-300", accent: "border-rose-400/50" },       // Rosa pastel
-            { bg: "bg-orange-100/95", border: "border-orange-300", accent: "border-orange-400/50" },   // Naranja pastel
-            { bg: "bg-purple-100/95", border: "border-purple-300", accent: "border-purple-400/50" }   // Lila pastel
+            { bg: "bg-amber-100/95", border: "border-amber-300", accent: "border-amber-400/50" },
+            { bg: "bg-emerald-100/95", border: "border-emerald-300", accent: "border-emerald-400/50" },
+            { bg: "bg-sky-100/95", border: "border-sky-300", accent: "border-sky-400/50" },
+            { bg: "bg-rose-100/95", border: "border-rose-300", accent: "border-rose-400/50" },
+            { bg: "bg-orange-100/95", border: "border-orange-300", accent: "border-orange-400/50" },
+            { bg: "bg-purple-100/95", border: "border-purple-300", accent: "border-purple-400/50" }
         ];
 
-        // Cargar y maquetar el Collage Completo
         window.cargarYMostrarCollage = async function(nombre) {
             document.getElementById('seccion-panel').classList.add('hidden');
             document.getElementById('seccion-collage').classList.remove('hidden');
             document.getElementById('protagonista-nombre').innerText = nombre;
 
             const contenedor = document.getElementById('contenedor-elementos-collage');
-            contenedor.innerHTML = ""; 
+            contenedor.innerHTML = `<div class="col-span-full text-center text-indigo-500 py-16 font-medium">Cargando todas las fortalezas enviadas... 💜</div>`;
 
             try {
                 const q = query(collection(db, "respuestas"), where("chicaNombre", "==", nombre.toUpperCase()));
                 const querySnapshot = await getDocs(q);
 
+                contenedor.innerHTML = "";
+
                 if (querySnapshot.empty) {
-                    contenedor.innerHTML = `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 italic bg-white/90 px-6 py-4 rounded-2xl shadow-md border border-indigo-50">Aún no hay respuestas enviadas para ${nombre}.</div>`;
+                    contenedor.innerHTML = `<div class="col-span-full text-center text-gray-400 italic bg-white/80 p-8 rounded-3xl shadow-sm border border-indigo-50">Aún no hay respuestas enviadas para ${nombre}.</div>`;
                     return;
                 }
 
-                // 8 POSICIONES MAESTRAS ALREDEDOR DEL LIENZO (1024x768)
-                // Se distribuyen uniformemente para usar todo el espacio de la pantalla sin tocar el centro
-                const posicionesGrupo = [
-                    { x: 30,  y: 35,  rot: -3 },   // Esquina superior izquierda
-                    { x: 420, y: 25,  rot: 2 },    // Superior centro
-                    { x: 740, y: 35,  rot: 4 },    // Esquina superior derecha
-                    { x: 30,  y: 280, rot: -4 },   // Centro izquierda
-                    { x: 750, y: 280, rot: 3 },    // Centro derecha
-                    { x: 30,  y: 510, rot: 4 },    // Esquina inferior izquierda
-                    { x: 420, y: 560, rot: -2 },   // Inferior centro
-                    { x: 740, y: 510, rot: -3 }    // Esquina inferior derecha
-                ];
+                const rotaciones = [-1.5, 1.2, -2, 1.8, -0.8, 2.2];
 
-                let index = 0;
-
-                querySnapshot.forEach((doc) => {
+                querySnapshot.forEach((doc, idx) => {
                     const datos = doc.data();
-                    
-                    // Obtener la coordenada base y el color aleatorio para este grupo de dedicatoria
-                    const posBase = posicionesGrupo[index % posicionesGrupo.length];
-                    const temaColor = coloresPosit[Math.floor(Math.random() * coloresPosit.length)];
-                    
-                    // Añadimos un micro-desplazamiento si participan más de 8 personas para que se apilen sutilmente
-                    const shiftX = (index >= posicionesGrupo.length) ? (Math.random() * 25 - 12) : 0;
-                    const shiftY = (index >= posicionesGrupo.length) ? (Math.random() * 25 - 12) : 0;
-                    index++;
+                    const temaColor = coloresPosit[idx % coloresPosit.length];
+                    const rot = rotaciones[idx % rotaciones.length];
 
-                    // CREAR UN CONTENEDOR AGRUPADO PARA EL PÓSIT Y SU FOTO (SE MUEVEN JUNTOS)
-                    const bloqueGrupo = document.createElement('div');
-                    bloqueGrupo.className = "absolute flex items-start gap-3 pointer-events-auto transition-all duration-300 hover:scale-110 hover:z-50 z-20";
-                    bloqueGrupo.style.left = `${posBase.x + shiftX}px`;
-                    bloqueGrupo.style.top = `${posBase.y + shiftY}px`;
-                    bloqueGrupo.style.transform = `rotate(${posBase.rot}deg)`;
+                    const tarjeta = document.createElement('div');
+                    tarjeta.className = "flex items-start gap-3 bg-white/70 backdrop-blur-sm p-3 rounded-3xl shadow-sm border border-white transition-all duration-300 hover:scale-[1.02] hover:shadow-md hover:z-20";
+                    tarjeta.style.transform = `rotate(${rot}deg)`;
 
-                    // Renderizar el Pósit simplificado: solo emojis/iconos, sin textos de categorías
-                    let htmlBloque = `
-                        <div class="w-52 ${temaColor.bg} p-3 rounded-2xl shadow-md border-t-8 ${temaColor.border} text-[10px] leading-relaxed text-gray-800">
-                            <div class="font-bold text-indigo-950 border-b border-dashed ${temaColor.accent} pb-1 mb-2 text-[11px] flex justify-between">
+                    let htmlContenido = `
+                        <div class="flex-grow h-auto ${temaColor.bg} p-4 rounded-2xl shadow-sm border-t-8 ${temaColor.border} text-[11px] leading-relaxed text-gray-800 break-words">
+                            <div class="font-bold text-indigo-950 border-b border-dashed ${temaColor.accent} pb-1.5 mb-2 text-xs flex justify-between items-center">
                                 <span>Mensaje bonito ✨</span>
                             </div>
-                            <p class="mb-1.5"><strong>💪</strong> ${datos.fortaleza}</p>
-                            <p class="mb-1.5"><strong>🎨</strong> ${datos.color}</p>
-                            <p class="mb-1.5"><strong>🎬</strong> ${datos.personaje}</p>
-                            <p class="mb-1.5"><strong>🗺️</strong> ${datos.plan}</p>
-                            <p class="mb-1.5"><strong>📻</strong> ${datos.cancion}</p>
-                            <p class="mb-1.5"><strong>☀️</strong> ${datos.superpoder}</p>
-                            <p class="mb-1.5"><strong>🌱</strong> ${datos.frase}</p>
-                            <p><strong>🧸</strong> ${datos.animal}</p>
+                            <p class="mb-1.5"><strong>💪</strong> ${datos.fortaleza || '-'}</p>
+                            <p class="mb-1.5"><strong>🎨</strong> ${datos.color || '-'}</p>
+                            <p class="mb-1.5"><strong>🎬</strong> ${datos.personaje || '-'}</p>
+                            <p class="mb-1.5"><strong>🗺️</strong> ${datos.plan || '-'}</p>
+                            <p class="mb-1.5"><strong>📻</strong> ${datos.cancion || '-'}</p>
+                            <p class="mb-1.5"><strong>☀️</strong> ${datos.superpoder || '-'}</p>
+                            <p class="mb-1.5"><strong>🌱</strong> ${datos.frase || '-'}</p>
+                            <p><strong>🧸</strong> ${datos.animal || '-'}</p>
                         </div>
                     `;
 
-                    // Si incluye foto, se añade JUSTO al lado con un borde blanco muy fino y simétrico
                     if (datos.foto) {
-                        htmlBloque += `
-                            <div class="bg-white p-1 rounded-xl shadow-lg border border-gray-100 w-28 transform rotate-3 flex-shrink-0 self-center">
-                                <img src="${datos.foto}" class="w-full h-24 object-cover rounded-lg border border-gray-100">
+                        htmlContenido += `
+                            <div class="bg-white p-1 rounded-2xl shadow-md border border-gray-100 w-28 sm:w-32 flex-shrink-0 self-center">
+                                <img src="${datos.foto}" class="w-full h-32 object-cover rounded-xl border border-gray-50" alt="Foto">
                             </div>
                         `;
                     }
 
-                    bloqueGrupo.innerHTML = htmlBloque;
-                    contenedor.appendChild(bloqueGrupo);
+                    tarjeta.innerHTML = htmlContenido;
+                    contenedor.appendChild(tarjeta);
                 });
 
             } catch (error) {
-                console.error("Error al montar collage interactivo:", error);
-                alert("Ha ocurrido un error al cargar la información de Firebase.");
+                console.error("Error al cargar collage:", error);
+                alert("Ocurrió un error al consultar las respuestas de Firebase.");
             }
         };
     </script>
 
+    <!-- CONTROL INTERFAZ Y EXPORTACION -->
     <script>
         function generarQR(nombre) {
             const modal = document.getElementById('modal-qr');
             const canvas = document.getElementById('qr-canvas');
             const titulo = document.getElementById('qr-titulo');
+            const inputEnlace = document.getElementById('enlace-copiable');
 
-            titulo.innerText = `Escanear para votar a ${nombre}`;
+            titulo.innerText = `Participar con ${nombre}`;
             
-            // Genera la URL apuntando al archivo formulario.html de la misma carpeta
-            const urlFormulario = `${window.location.origin}${window.location.pathname.replace('index.html', '')}formulario.html?chica=${encodeURIComponent(nombre)}`;
+            const base = window.location.origin.includes('github.io') 
+                ? `${window.location.origin}/juego-fortalezas/` 
+                : `${window.location.origin}${window.location.pathname.replace('index.html', '')}`;
+            
+            const urlFormulario = `${base}formulario.html?chica=${encodeURIComponent(nombre)}`;
+
+            inputEnlace.value = urlFormulario;
 
             new QRious({
                 element: canvas,
                 value: urlFormulario,
-                size: 220,
+                size: 210,
                 background: '#ffffff',
                 foreground: '#4f46e5'
             });
 
             modal.classList.remove('hidden');
+        }
+
+        function copiarEnlaceDirecto() {
+            const input = document.getElementById('enlace-copiable');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            const btn = document.getElementById('btn-copiar');
+            btn.innerText = "¡Copiado! ✓";
+            setTimeout(() => { btn.innerText = "Copiar"; }, 2000);
         }
 
         function cerrarModalQR() {
@@ -251,15 +248,24 @@
         function exportarCollage() {
             const elemento = document.getElementById('area-collage');
             const nombre = document.getElementById('protagonista-nombre').innerText;
+            const scrollOriginal = window.scrollY;
 
             html2canvas(elemento, { 
-                scale: 2, // Súper nítido para impresión física
-                useCORS: true 
+                scale: 2.5,
+                useCORS: true,
+                backgroundColor: null,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 1400
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `Collage_${nombre}.png`;
+                link.download = `Collage_${nombre}_Fortalezas.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                window.scrollTo(0, scrollOriginal);
+            }).catch(err => {
+                console.error("Error al exportar collage:", err);
+                alert("Hubo un error al exportar la imagen.");
             });
         }
     </script>
