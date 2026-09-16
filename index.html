@@ -155,7 +155,7 @@
 
                 const rotaciones = [-1.5, 1.2, -2, 1.8, -0.8, 2.2];
 
-                querySnapshot.doc.forEach((doc, idx) => {
+                querySnapshot.docs.forEach((doc, idx) => {
                     const datos = doc.data();
                     const temaColor = coloresPosit[idx % coloresPosit.length];
                     const rot = rotaciones[idx % rotaciones.length];
